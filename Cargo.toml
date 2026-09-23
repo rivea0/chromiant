@@ -11,3 +11,5 @@ csv = "1.4.0"
 
 [build-dependencies]
 anyhow = "1"
+reqwest = { version = "0.13", features = ["json"] }
+tokio = { version = "1", features = ["full"] }

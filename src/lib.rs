@@ -24,7 +24,7 @@ struct SearchQuery {
 
 fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
     let mut rdr =
-        Reader::from_path(concat!(env!("OUT_DIR"), "/data.csv")).context("File not found")?;
+        Reader::from_path(concat!(env!("OUT_DIR"), "/colornames.csv")).context("File not found")?;
     let results = rdr.deserialize();
     let colors = results
         .filter_map(|result| result.ok())
@@ -37,7 +37,7 @@ fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
 // Names and hex values are unique
 fn search(query: &SearchQuery) -> Result<Option<Color>> {
     let mut rdr =
-        Reader::from_path(concat!(env!("OUT_DIR"), "/data.csv")).context("File not found")?;
+        Reader::from_path(concat!(env!("OUT_DIR"), "/colornames.csv")).context("File not found")?;
     let results = rdr.deserialize();
 
     let color = match query.search_type {
