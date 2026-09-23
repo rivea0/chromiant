@@ -1,0 +1,13 @@
+[package]
+name = "chromiant"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+csv = "1.4.0"
+
+[build-dependencies]
+anyhow = "1"
