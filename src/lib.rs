@@ -108,6 +108,10 @@ fn write_colornames_data() -> Result<()> {
 fn write_data_to_file() -> Result<()> {
     let file_path = std::path::Path::new("./colornames.csv");
     if !file_path.is_file() {
+        println!(
+            "Creating colornames.csv at {}",
+            file_path.as_os_str().display()
+        );
         write_colornames_data()?;
     } else {
         // Get the modified info of the local file
@@ -138,6 +142,10 @@ fn write_data_to_file() -> Result<()> {
 
         // If the remote file is more recent, write to file
         if file_modified < orig_file_modified {
+            println!(
+                "Updating colornames.csv at {}",
+                file_path.as_os_str().display()
+            );
             write_colornames_data()?;
         }
     }
