@@ -10,7 +10,7 @@ pub struct Color {
     pub name: String,
     pub hex: String,
     #[serde(rename = "good name")]
-    pub good_name: Option<String>,
+    pub good_name: Option<char>,
 }
 
 #[derive(Debug)]
@@ -71,6 +71,20 @@ pub fn by_hex(s: &str) -> Result<Option<Color>> {
     let search_query = SearchQuery {
         search_type: SearchType::ByHex,
         query: s.to_string(),
+    };
+
+    write_data_to_file()?;
+
+    let result = search(&search_query)?;
+
+    Ok(result)
+}
+
+pub fn by_rgb(r: u8, g: u8, b: u8) -> Result<Option<Color>> {
+    let hex = format!("#{:02X}{:02X}{:02X}", r, g, b).to_lowercase();
+    let search_query = SearchQuery {
+        search_type: SearchType::ByHex,
+        query: hex,
     };
 
     write_data_to_file()?;
