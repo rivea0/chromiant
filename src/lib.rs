@@ -137,6 +137,10 @@ fn write_data_to_file() -> Result<()> {
         let d = SignedDuration::system_until(SystemTime::UNIX_EPOCH, file_modified)?;
         let file_modified = Timestamp::from_duration(d)?;
 
+        if is_recent(file_modified) {
+            return Ok(());
+        }
+
         // Get the remote file's modified info
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
@@ -164,6 +168,13 @@ fn write_data_to_file() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn is_recent(timestamp: Timestamp) -> bool {
+    let age = timestamp.duration_until(Timestamp::now());
+    let day = SignedDuration::from_hours(24);
+
+    age >= SignedDuration::ZERO && age < day
 }
 
 #[derive(Debug, Serialize, Deserialize)]
