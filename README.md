@@ -2,7 +2,7 @@ Usage:
 
 ```rust
 use anyhow::Result;
-use chromiant::{by_exact_name, by_hex, by_name, by_rgb};
+use chromiant::{by_exact_name, by_hex, by_hsl, by_name, by_rgb};
 
 fn main() -> Result<()> {
     let color1 = by_exact_name("Peach and Quiet")?;
@@ -13,6 +13,14 @@ fn main() -> Result<()> {
 
     let color3 = by_rgb(1, 1, 1)?;
     assert_eq!("Binary Black", color3.unwrap().name);
+
+    let color3 = by_rgb(148, 135, 126)?;
+    assert_eq!("Abandoned Mansion", color3.unwrap().name);
+
+    // HSL values need precision.
+    // This will not have the result as `by_hsl(0.07, 0.09, 0.54)`:
+    let color4 = by_hsl(0.068, 0.093, 0.537)?;
+    assert_eq!("Abandoned Mansion", color4.unwrap().name);
 
     let colors = by_name("Iceland")?;
     println!("{:#?}", colors);

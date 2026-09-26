@@ -107,6 +107,7 @@ name = "chromiant"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "colorsys",
  "csv",
  "dirs",
  "jiff",
@@ -123,6 +124,12 @@ checksum = "c0f78a02292a74a88ac736019ab962ece0bc380e3f977bf72e376c5d78ff0678"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "colorsys"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65036b2f761dc2d20b4634890f73bdbad811d5edb677f84fd652ae9256051fcb"
 
 [[package]]
 name = "combine"

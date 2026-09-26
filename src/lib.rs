@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use colorsys::{Hsl, Rgb};
 use csv::Reader;
 use jiff::{SignedDuration, Timestamp};
 use reqwest::blocking::Client;
@@ -93,7 +94,9 @@ pub fn by_hex(s: &str) -> Result<Option<Color>> {
 }
 
 pub fn by_rgb(r: u8, g: u8, b: u8) -> Result<Option<Color>> {
-    let hex = format!("#{:02X}{:02X}{:02X}", r, g, b).to_lowercase();
+    let rgb = Rgb::from([r, g, b]);
+    let hex = rgb.to_hex_string();
+
     let search_query = SearchQuery {
         search_type: SearchType::ByHex,
         query: hex,
@@ -113,6 +116,23 @@ pub fn by_name(pattern: &str) -> Result<Option<Vec<Color>>> {
     let results = search_multiple(pattern)?;
 
     Ok(results)
+}
+
+pub fn by_hsl(h: f64, s: f64, l: f64) -> Result<Option<Color>> {
+    let hsl = Hsl::from(&(h * 360.0, s * 100.0, l * 100.0));
+    let rgb = Rgb::from(&hsl);
+    let hex = rgb.to_hex_string();
+
+    let search_query = SearchQuery {
+        search_type: SearchType::ByHex,
+        query: hex,
+    };
+
+    write_data_to_file()?;
+
+    let result = search(&search_query)?;
+
+    Ok(result)
 }
 
 fn write_colornames_data() -> Result<()> {
