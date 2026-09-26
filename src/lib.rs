@@ -2,11 +2,19 @@ use anyhow::{Context, Result};
 use csv::Reader;
 use jiff::{SignedDuration, Timestamp};
 use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{
+    fs,
     io::Write,
+    path::Path,
     time::{Duration, SystemTime},
 };
+
+mod api_resp;
+mod helpers;
+
+use crate::api_resp::ApiResp;
+use crate::helpers::{get_data_dir, get_data_path, is_recent};
 
 #[derive(Deserialize, Default, Debug, PartialEq)]
 pub struct Color {
@@ -29,7 +37,8 @@ struct SearchQuery {
 }
 
 fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
-    let mut rdr = Reader::from_path("./colornames.csv")?;
+    let path = get_data_path()?;
+    let mut rdr = Reader::from_path(path).context("File not found")?;
     let results = rdr.deserialize();
     let colors = results
         .filter_map(|result| result.ok())
@@ -41,8 +50,8 @@ fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
 
 // Names and hex values are unique
 fn search(query: &SearchQuery) -> Result<Option<Color>> {
-    let p = "./colornames.csv";
-    let mut rdr = Reader::from_path(p).context("File not found")?;
+    let path = get_data_path()?;
+    let mut rdr = Reader::from_path(path).context("File not found")?;
     let results = rdr.deserialize();
 
     let color = match query.search_type {
@@ -116,23 +125,27 @@ fn write_colornames_data() -> Result<()> {
     // If timeout, don't do anything, `search` will use the existing file
     let result = req.text()?;
 
-    let mut f = std::fs::File::create("./colornames.csv")?;
+    let path = get_data_path()?;
+    let mut f = fs::File::options().write(true).open(path)?;
     f.write_all(result.as_bytes())?;
 
     Ok(())
 }
 
 fn write_data_to_file() -> Result<()> {
-    let file_path = std::path::Path::new("./colornames.csv");
-    if !file_path.is_file() {
+    let data_dir = get_data_dir();
+    if !data_dir.is_dir() {
         println!(
             "Creating colornames.csv at {}",
-            file_path.as_os_str().display()
+            data_dir.as_os_str().display()
         );
+
+        fs::create_dir(&data_dir)?;
+        fs::File::create(Path::new(&data_dir).join("colornames.csv"))?;
         write_colornames_data()?;
     } else {
-        // Get the modified info of the local file
-        let metadata = std::fs::metadata(file_path)?;
+        let file_path = get_data_path()?;
+        let metadata = std::fs::metadata(&file_path)?;
         let file_modified = metadata.modified()?;
         let d = SignedDuration::system_until(SystemTime::UNIX_EPOCH, file_modified)?;
         let file_modified = Timestamp::from_duration(d)?;
@@ -168,88 +181,4 @@ fn write_data_to_file() -> Result<()> {
     }
 
     Ok(())
-}
-
-fn is_recent(timestamp: Timestamp) -> bool {
-    let age = timestamp.duration_until(Timestamp::now());
-    let day = SignedDuration::from_hours(24);
-
-    age >= SignedDuration::ZERO && age < day
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiResp {
-    sha: String,
-    node_id: String,
-    commit: Commit,
-    url: String,
-    html_url: String,
-    comments_url: String,
-    author: ApiRespAuthor,
-    committer: ApiRespAuthor,
-    parents: Vec<Parents>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Commit {
-    author: Author,
-    committer: Author,
-    message: String,
-    tree: Tree,
-    url: String,
-    comment_count: u32,
-    verification: Verification,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Author {
-    name: String,
-    email: String,
-    date: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Tree {
-    sha: String,
-    url: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Verification {
-    verified: bool,
-    reason: String,
-    signature: Option<String>,
-    payload: Option<String>,
-    verified_at: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiRespAuthor {
-    login: String,
-    id: u32,
-    node_id: String,
-    avatar_url: String,
-    gravatar_id: String,
-    url: String,
-    html_url: String,
-    followers_url: String,
-    following_url: String,
-    gists_url: String,
-    starred_url: String,
-    subscriptions_url: String,
-    organizations_url: String,
-    repos_url: String,
-    events_url: String,
-    received_events_url: String,
-    #[serde(rename = "type")]
-    type_: String,
-    user_view_type: String,
-    site_admin: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Parents {
-    sha: String,
-    url: String,
-    html_url: String,
 }
