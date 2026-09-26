@@ -157,7 +157,11 @@ fn write_data_to_file() -> Result<()> {
         // Get the remote file's modified info
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
-            .user_agent("test package")
+            .user_agent(concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                env!("CARGO_PKG_VERSION")
+            ))
             .build()?;
 
         let req = client

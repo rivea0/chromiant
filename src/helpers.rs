@@ -24,8 +24,7 @@ pub(crate) fn get_data_dir() -> PathBuf {
             .to_path_buf(),
     };
 
-    dir.push("chromiant");
+    dir.push(env!("CARGO_PKG_NAME"));
 
     dir
 }
-
