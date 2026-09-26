@@ -1,9 +1,12 @@
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc};
 use csv::Reader;
+use jiff::{SignedDuration, Timestamp};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
-use std::{io::Write, time::Duration};
+use std::{
+    io::Write,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Deserialize, Default, Debug, PartialEq)]
 pub struct Color {
@@ -131,10 +134,8 @@ fn write_data_to_file() -> Result<()> {
         // Get the modified info of the local file
         let metadata = std::fs::metadata(file_path)?;
         let file_modified = metadata.modified()?;
-        let file_modified = file_modified
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs();
-        let file_modified = i64::try_from(file_modified)?;
+        let d = SignedDuration::system_until(SystemTime::UNIX_EPOCH, file_modified)?;
+        let file_modified = Timestamp::from_duration(d)?;
 
         // Get the remote file's modified info
         let client = Client::builder()
@@ -150,9 +151,7 @@ fn write_data_to_file() -> Result<()> {
             anyhow::bail!("Can't get last commit");
         };
 
-        let orig_file_modified = DateTime::parse_from_rfc3339(&last_commit.commit.author.date)?
-            .with_timezone(&Utc)
-            .timestamp();
+        let orig_file_modified: Timestamp = last_commit.commit.author.date.parse()?;
 
         // If the remote file is more recent, write to file
         if file_modified < orig_file_modified {
