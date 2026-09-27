@@ -168,4 +168,82 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn by_rgb_finds_existing_colors() {
+        let color = by_rgb(1, 1, 1).unwrap();
+        assert_eq!("Binary Black", color.unwrap().name);
+
+        let color2 = by_rgb(148, 135, 126).unwrap();
+        assert_eq!(
+            Some(Color {
+                name: "Abandoned Mansion".to_string(),
+                hex: "#94877e".to_string(),
+                good_name: None
+            }),
+            color2
+        );
+    }
+
+    #[test]
+    fn by_rgb_fails_on_non_existent_value() {
+        let c = by_rgb(0, 0, 1);
+        assert_eq!(None, c.unwrap());
+    }
+
+    #[test]
+    fn by_hsl_finds_existing_colors() {
+        let color = by_hsl(0.068, 0.093, 0.537).unwrap();
+        assert_eq!("Abandoned Mansion", color.unwrap().name);
+
+        let color2 = by_hsl(0.0, 1.0, 0.666).unwrap();
+        assert_eq!(
+            Some(Color {
+                name: "Fluorescent Red".to_string(),
+                hex: "#ff5555".to_string(),
+                good_name: None
+            }),
+            color2
+        );
+    }
+
+    #[test]
+    fn by_hsl_fails_on_incorrect_value() {
+        let c = by_hsl(0.07, 0.09, 0.54);
+        assert_eq!(None, c.unwrap());
+    }
+
+    #[test]
+    fn by_name_finds_existing_colors() {
+        let colors = by_name("Fluorescent").unwrap();
+        assert!(!colors.unwrap().is_empty());
+
+        let colors2 = by_name("Gloomy").unwrap();
+        assert_eq!(
+            Some(vec![
+                Color {
+                    name: "Gloomy Blue".to_string(),
+                    hex: "#3c416a".to_string(),
+                    good_name: None,
+                },
+                Color {
+                    name: "Gloomy Purple".to_string(),
+                    hex: "#8756e4".to_string(),
+                    good_name: None,
+                },
+                Color {
+                    name: "Gloomy Sea".to_string(),
+                    hex: "#4a657a".to_string(),
+                    good_name: None,
+                },
+            ],),
+            colors2
+        );
+    }
+
+    #[test]
+    fn by_name_fails_on_non_existent_name() {
+        let c = by_name("abcde");
+        assert_eq!(None, c.unwrap());
+    }
 }
