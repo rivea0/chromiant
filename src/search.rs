@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
 use csv::Reader;
 
-use crate::{Color, helpers::get_data_path};
+use std::path::Path;
+
+use crate::Color;
 
 #[derive(Debug)]
 pub(crate) enum SearchType {
@@ -15,8 +17,7 @@ pub(crate) struct SearchQuery {
     pub(crate) query: String,
 }
 
-pub(crate) fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
-    let path = get_data_path()?;
+pub(crate) fn search_multiple(s: &str, path: &Path) -> Result<Option<Vec<Color>>> {
     let mut rdr = Reader::from_path(path).context("File not found")?;
     let results = rdr.deserialize();
     let colors = results
@@ -28,8 +29,7 @@ pub(crate) fn search_multiple(s: &str) -> Result<Option<Vec<Color>>> {
 }
 
 // Names and hex values are unique
-pub(crate) fn search(query: &SearchQuery) -> Result<Option<Color>> {
-    let path = get_data_path()?;
+pub(crate) fn search(query: &SearchQuery, path: &Path) -> Result<Option<Color>> {
     let mut rdr = Reader::from_path(path).context("File not found")?;
     let results = rdr.deserialize();
 
