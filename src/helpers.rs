@@ -19,7 +19,7 @@ fn is_recent(timestamp: Timestamp) -> bool {
     age >= SignedDuration::ZERO && age < day
 }
 
-pub(crate) fn get_data_path() -> Result<PathBuf> {
+pub(crate) fn get_local_file_path() -> Result<PathBuf> {
     let dir = get_data_dir();
 
     Ok(dir.join("colornames.csv"))
@@ -124,7 +124,7 @@ pub(crate) fn write_data_to_file(file_path: &Path) -> Result<()> {
 
         update_local_data_file(file_path)?;
     } else {
-        let file_path = get_data_path()?;
+        let file_path = get_local_file_path()?;
         if !file_path.is_file() {
             update_local_data_file(&file_path)?;
         }
