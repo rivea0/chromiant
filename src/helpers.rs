@@ -86,7 +86,7 @@ fn update_local_data_file() -> Result<()> {
                 let data_dir = get_data_dir();
                 fs::File::create(Path::new(&data_dir).join("colornames.csv"))?;
             }
-            println!("Writing to file at {}.", file_path.display());
+            println!("Writing to file at {}", file_path.display());
             let mut f = fs::File::options().write(true).open(file_path)?;
             f.write_all(data.as_bytes())?;
         }
@@ -116,7 +116,7 @@ pub(crate) fn write_data_to_file() -> Result<()> {
     let data_dir = get_data_dir();
     if !data_dir.is_dir() {
         println!(
-            "Creating colornames.csv at {}",
+            "Creating data directory {}",
             data_dir.as_os_str().display()
         );
 
