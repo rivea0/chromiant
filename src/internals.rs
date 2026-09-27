@@ -80,16 +80,36 @@ pub(crate) fn by_hsl_in(h: f64, s: f64, l: f64, file_path: &Path) -> Result<Opti
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
 
-    use crate::helpers::update_local_data_file;
+    use crate::helpers::{MockResourceFetcher, update_local_data_file};
 
     #[test]
     fn by_exact_name_in_finds_existing_colors() {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Peach and Quiet", "#ffccb6", "x"])
+            .unwrap();
+        wtr.write_record(&["Black", "#000000", "x"]).unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nPeach and Quiet,#ffccb6,x\nBlack,#000000,x";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let color = by_exact_name_in("Peach and Quiet", &p).unwrap();
         let color2 = by_exact_name_in("Black", &p).unwrap();
@@ -110,7 +130,23 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Black", "#000000", "x"]).unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBlack,#000000,x";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let c = by_exact_name_in("bla bla", &p);
         assert_eq!(None, c.unwrap());
@@ -121,7 +157,24 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Bitter Orange", "#d5762b", ""]).unwrap();
+        wtr.write_record(&["Egg White", "#ffefc1", ""]).unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBitter Orange,#d5762b,\nEgg White,#ffefc1,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let color = by_hex_in("#d5762b", &p).unwrap();
         let color2 = by_hex_in("#ffefc1", &p).unwrap();
@@ -143,7 +196,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        // update_local_data_file(&p).unwrap();
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher.expect_fetch().times(0);
 
         let result = by_hex_in("535535", &p).unwrap_err();
 
@@ -161,7 +215,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        // update_local_data_file(&p).unwrap();
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher.expect_fetch().times(0);
 
         let result = by_hex_in("+000000", &p).unwrap_err();
 
@@ -179,7 +234,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        // update_local_data_file(&p).unwrap();
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher.expect_fetch().times(0);
 
         let result = by_hex_in("#0000gg", &p).unwrap_err();
 
@@ -197,7 +253,25 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Binary Black", "#010101", ""]).unwrap();
+        wtr.write_record(&["Abandoned Mansion", "#94877e", ""])
+            .unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBinary Black,#010101,\nAbandoned Mansion,#94877e,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let color = by_rgb_in(1, 1, 1, &p).unwrap();
         assert_eq!("Binary Black", color.unwrap().name);
@@ -218,7 +292,25 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Binary Black", "#010101", ""]).unwrap();
+        wtr.write_record(&["Abandoned Mansion", "#94877e", ""])
+            .unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBinary Black,#010101,\nAbandoned Mansion,#94877e,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let c = by_rgb_in(0, 0, 1, &p);
         assert_eq!(None, c.unwrap());
@@ -229,7 +321,27 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Abandoned Mansion", "#94877e", ""])
+            .unwrap();
+        wtr.write_record(&["Fluorescent Red", "#ff5555", ""])
+            .unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data =
+            "name,hex,good name\nAbandoned Mansion,#94877e,\nFluorescent Red,#ff5555,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let color = by_hsl_in(0.068, 0.093, 0.537, &p).unwrap();
         assert_eq!("Abandoned Mansion", color.unwrap().name);
@@ -250,7 +362,25 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Binary Black", "#010101", ""]).unwrap();
+        wtr.write_record(&["Abandoned Mansion", "#94877e", ""])
+            .unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBinary Black,#010101,\nAbandoned Mansion,#94877e,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let c = by_hsl_in(0.07, 0.09, 0.54, &p);
         assert_eq!(None, c.unwrap());
@@ -261,7 +391,28 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Fluorescent Red", "#ff5555", ""])
+            .unwrap();
+        wtr.write_record(&["Gloomy Blue", "#3c416a", ""]).unwrap();
+        wtr.write_record(&["Gloomy Purple", "#8756e4", ""]).unwrap();
+        wtr.write_record(&["Gloomy Sea", "#4a657a", ""]).unwrap();
+
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nFluorescent Red,#ff5555,\nGloomy Blue,#3c416a,\nGloomy Purple,#8756e4,\nGloomy Sea,#4a657a,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let colors = by_name_in("Fluorescent", &p).unwrap();
         assert!(!colors.unwrap().is_empty());
@@ -294,7 +445,25 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("colornames.csv");
 
-        update_local_data_file(&p).unwrap();
+        let mut wtr = csv::Writer::from_path(&p).unwrap();
+        wtr.write_record(&["name", "hex", "good name"]).unwrap();
+        wtr.write_record(&["Binary Black", "#010101", ""]).unwrap();
+        wtr.write_record(&["Abandoned Mansion", "#94877e", ""])
+            .unwrap();
+        wtr.flush().unwrap();
+
+        let expected_data = "name,hex,good name\nBinary Black,#010101,\nAbandoned Mansion,#94877e,";
+
+        let mut fetcher = MockResourceFetcher::new();
+        fetcher
+            .expect_fetch()
+            .with(mockall::predicate::eq(Duration::from_secs(30)), mockall::predicate::eq("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv"))
+            .times(1)
+            .returning(|_, _| {
+                Ok(expected_data.to_string())
+            });
+
+        update_local_data_file(&p, &fetcher).unwrap();
 
         let c = by_name_in("abcde", &p);
         assert_eq!(None, c.unwrap());
