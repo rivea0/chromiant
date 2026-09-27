@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use colorsys::{Hsl, Rgb};
 use csv::Reader;
 use jiff::{SignedDuration, Timestamp};
-use reqwest::blocking::Client;
+use reqwest::blocking::{Client, Response};
 use serde::Deserialize;
 use std::{
     fs,
@@ -135,23 +135,80 @@ pub fn by_hsl(h: f64, s: f64, l: f64) -> Result<Option<Color>> {
     Ok(result)
 }
 
-fn write_colornames_data() -> Result<()> {
-    let client = Client::builder().timeout(Duration::from_secs(30)).build()?;
+fn get_colornames_data_from_remote_src(timeout: Duration) -> Result<Response, reqwest::Error> {
+    let client = Client::builder().timeout(timeout).build()?;
+
+    client
+        .get("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv")
+        .send()
+}
+
+fn get_modified_timestamp_of_remote_src() -> Result<Timestamp> {
+    let client = Client::builder()
+        .timeout(Duration::from_secs(30))
+        .user_agent(concat!(
+            env!("CARGO_PKG_NAME"),
+            "/",
+            env!("CARGO_PKG_VERSION")
+        ))
+        .build()?;
 
     let req = client
-        .get("https://raw.githubusercontent.com/meodai/color-names/refs/heads/main/src/colornames.csv")
-        .send()?;
+            .get("https://api.github.com/repos/meodai/color-names/commits?path=src/colornames.csv&per_page=1")
+            .send()?;
+    let api_resp = req.json::<Vec<ApiResp>>()?;
+    let Some(last_commit) = api_resp.first() else {
+        anyhow::bail!("Can't get last commit");
+    };
 
-    // If timeout, don't do anything, `search` will use the existing file
-    let result = req.text()?;
+    let orig_file_modified: Timestamp = last_commit.commit.author.date.parse()?;
 
-    let path = get_data_path()?;
-    let mut f = fs::File::options().write(true).open(path)?;
-    f.write_all(result.as_bytes())?;
+    Ok(orig_file_modified)
+}
+
+// Fetch data from remote source and write to file.
+// Assumes that the data directory exists.
+fn update_local_data_file() -> Result<()> {
+    let file_path = get_data_path()?;
+
+    match get_colornames_data_from_remote_src(Duration::from_secs(30)) {
+        Ok(res) => {
+            let data = res.text()?;
+            println!("Got data from remote source file");
+            if !file_path.is_file() {
+                println!(
+                    "Local data file doesn't exist, creating it at {}",
+                    file_path.display()
+                );
+                let data_dir = get_data_dir();
+                fs::File::create(Path::new(&data_dir).join("colornames.csv"))?;
+            }
+            println!("Writing to file at {}.", file_path.display());
+            let mut f = fs::File::options().write(true).open(file_path)?;
+            f.write_all(data.as_bytes())?;
+        }
+        Err(e) => {
+            if e.is_timeout() {
+                if !file_path.is_file() {
+                    bail!(
+                        "Connection timed out, and {} does not exist",
+                        file_path.display()
+                    );
+                } else {
+                    eprintln!(
+                        "Connection timed out, using the existing file at {}",
+                        file_path.display()
+                    );
+                }
+            }
+        }
+    }
 
     Ok(())
 }
 
+// Create the data directory if it doesn't exist and write to file.
+// If the data dir exists, check if the file is recent, and if not, write to file.
 fn write_data_to_file() -> Result<()> {
     let data_dir = get_data_dir();
     if !data_dir.is_dir() {
@@ -161,46 +218,32 @@ fn write_data_to_file() -> Result<()> {
         );
 
         fs::create_dir(&data_dir)?;
-        fs::File::create(Path::new(&data_dir).join("colornames.csv"))?;
-        write_colornames_data()?;
+
+        update_local_data_file()?;
     } else {
         let file_path = get_data_path()?;
+        if !file_path.is_file() {
+            update_local_data_file()?;
+        }
         let metadata = std::fs::metadata(&file_path)?;
         let file_modified = metadata.modified()?;
         let d = SignedDuration::system_until(SystemTime::UNIX_EPOCH, file_modified)?;
         let file_modified = Timestamp::from_duration(d)?;
 
         if is_recent(file_modified) {
+            println!("Using existing file at {}", file_path.display());
             return Ok(());
         }
 
-        // Get the remote file's modified info
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30))
-            .user_agent(concat!(
-                env!("CARGO_PKG_NAME"),
-                "/",
-                env!("CARGO_PKG_VERSION")
-            ))
-            .build()?;
+        let orig_file_modified = get_modified_timestamp_of_remote_src()?;
 
-        let req = client
-            .get("https://api.github.com/repos/meodai/color-names/commits?path=src/colornames.csv&per_page=1")
-            .send()?;
-        let api_resp = req.json::<Vec<ApiResp>>()?;
-        let Some(last_commit) = api_resp.first() else {
-            anyhow::bail!("Can't get last commit");
-        };
-
-        let orig_file_modified: Timestamp = last_commit.commit.author.date.parse()?;
-
-        // If the remote file is more recent, write to file
         if file_modified < orig_file_modified {
             println!(
                 "Updating colornames.csv at {}",
                 file_path.as_os_str().display()
             );
-            write_colornames_data()?;
+
+            update_local_data_file()?;
         }
     }
 
