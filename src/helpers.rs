@@ -115,10 +115,7 @@ fn update_local_data_file() -> Result<()> {
 pub(crate) fn write_data_to_file() -> Result<()> {
     let data_dir = get_data_dir();
     if !data_dir.is_dir() {
-        println!(
-            "Creating data directory {}",
-            data_dir.as_os_str().display()
-        );
+        println!("Creating data directory {}", data_dir.as_os_str().display());
 
         fs::create_dir(&data_dir)?;
 
@@ -151,4 +148,24 @@ pub(crate) fn write_data_to_file() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub(crate) fn validate_hex_string(hex_str: &str) -> Result<bool> {
+    if hex_str.chars().count() != 7 {
+        bail!(
+            "Expected 7 characters (such as #RRGGBB), got {}",
+            hex_str.chars().count()
+        );
+    }
+
+    let Some('#') = hex_str.chars().next() else {
+        bail!("Expected string to start with '#'");
+    };
+
+    let hex_str = &hex_str[1..];
+    if !hex_str.chars().all(|c| c.is_ascii_hexdigit()) {
+        bail!("Expected only hex digits after '#'");
+    }
+
+    Ok(true)
 }
