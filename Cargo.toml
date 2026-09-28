@@ -2,6 +2,12 @@
 name = "chromiant"
 version = "0.1.0"
 edition = "2024"
+description = "A library to search for colors from a curated collection of unique color names."
+license = "MIT"
+readme = "README.md"
+keywords = ["color", "hsl", "rgb", "hex"]
+homepage = "https://github.com/rivea0/chromiant"
+repository = "https://github.com/rivea0/chromiant"
 
 [dependencies]
 anyhow = "1.0"
