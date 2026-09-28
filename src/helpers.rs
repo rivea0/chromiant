@@ -73,7 +73,10 @@ fn get_modified_timestamp_of_remote_src() -> Result<Timestamp> {
 
 // Fetch data from remote source and write to file.
 // Assumes that the data directory exists.
-pub(crate) fn update_local_data_file(file_path: &Path, fetcher: &impl ResourceFetcher) -> Result<()> {
+pub(crate) fn update_local_data_file(
+    file_path: &Path,
+    fetcher: &impl ResourceFetcher,
+) -> Result<()> {
     match get_colornames_data_from_remote_src(Duration::from_secs(30), fetcher) {
         Ok(data) => {
             if !file_path.is_file() {
@@ -81,10 +84,7 @@ pub(crate) fn update_local_data_file(file_path: &Path, fetcher: &impl ResourceFe
                     "Local data file doesn't exist, creating it at {}",
                     file_path.display()
                 );
-                let Some(data_dir) = file_path.parent() else {
-                    bail!("Couldn't get parent directory");
-                };
-                fs::File::create(Path::new(&data_dir).join("colornames.csv"))?;
+                fs::File::create(file_path)?;
             }
             println!("Got data from remote source file");
             println!("Writing to file at {}", file_path.display());
@@ -126,11 +126,10 @@ pub(crate) fn write_data_to_file(file_path: &Path) -> Result<()> {
 
         update_local_data_file(file_path, &default_fetcher)?;
     } else {
-        let file_path = get_local_file_path()?;
         if !file_path.is_file() {
-            update_local_data_file(&file_path, &default_fetcher)?;
+            update_local_data_file(file_path, &default_fetcher)?;
         }
-        let metadata = std::fs::metadata(&file_path)?;
+        let metadata = std::fs::metadata(file_path)?;
         let file_modified = metadata.modified()?;
         let d = SignedDuration::system_until(SystemTime::UNIX_EPOCH, file_modified)?;
         let file_modified = Timestamp::from_duration(d)?;
@@ -148,7 +147,7 @@ pub(crate) fn write_data_to_file(file_path: &Path) -> Result<()> {
                 file_path.as_os_str().display()
             );
 
-            update_local_data_file(&file_path, &default_fetcher)?;
+            update_local_data_file(file_path, &default_fetcher)?;
         }
     }
 
