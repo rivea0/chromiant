@@ -1,4 +1,17 @@
-Usage:
+# chromiant
+
+A library to search for colors from a [curated collection of unique color names](https://github.com/meodai/color-names/blob/main/src/colornames.csv).
+
+```toml
+[dependencies]
+chromiant = "0.1.0"
+```
+
+## Usage
+
+Colors can be searched by exact matching name, by hex value, by HSL, by RGB, and by name (color names that contain the given pattern).
+
+### Example
 
 ```rust
 use anyhow::Result;
