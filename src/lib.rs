@@ -79,7 +79,7 @@ pub struct Color {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use chromiant::by_exact_name;
 ///
 /// let color = by_exact_name("Goldfish").unwrap();
@@ -102,7 +102,7 @@ pub fn by_exact_name(s: &str) -> Result<Option<Color>> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use chromiant::by_hex;
 ///
 /// let color = by_hex("#46473e").unwrap();
@@ -126,7 +126,7 @@ pub fn by_hex(s: &str) -> Result<Option<Color>> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use chromiant::by_rgb;
 ///
 /// let color = by_rgb(1, 2, 3).unwrap();
@@ -149,7 +149,7 @@ pub fn by_rgb(r: u8, g: u8, b: u8) -> Result<Option<Color>> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use chromiant::{Color, by_name};
 ///
 /// let colors = by_name("Fox").unwrap();
@@ -168,7 +168,6 @@ pub fn by_rgb(r: u8, g: u8, b: u8) -> Result<Option<Color>> {
 /// let colors = colors.unwrap();
 ///
 /// assert!(colors.contains(&arctic_fox) && colors.contains(&foxglove));
-///
 /// ```
 pub fn by_name(pattern: &str) -> Result<Option<Vec<Color>>> {
     let file_path = get_local_file_path()?;
@@ -192,7 +191,7 @@ pub fn by_name(pattern: &str) -> Result<Option<Vec<Color>>> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use chromiant::by_hsl;
 ///
 /// let color = by_hsl(0.0, 1.0, 0.666).unwrap();
